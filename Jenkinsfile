@@ -1,9 +1,21 @@
 pipeline { 
     agent any 
     stages { 
+        stage('Checkout SCM') {
+			steps {
+				git 'https://github.com/milosaur/simple-node-js-react-npm-app'
+			}
+		}
+
+		stage('OWASP DependencyCheck') {
+			steps {
+				dependencyCheck additionalArguments: '--format HTML --format XML --disableYarnAudit --suppression suppression.xml', odcInstallation: 'Default'
+			}
+		}
+
         stage ('Checkout') { 
             steps { 
-                git branch:'master', url: 'https://github.com/milosaur/simple-node-js-react-npm-app.git' 
+                git branch:'master', url: 'https://github.com/ScaleSec/vulnado.git' 
             } 
         } 
          
@@ -22,6 +34,10 @@ checkstyle:checkstyle pmd:pmd pmd:cpd findbugs:findbugs'
         } 
     } 
     post { 
+        success {
+			dependencyCheckPublisher pattern: 'dependency-check-report.xml'
+        }
+
         always { 
             junit testResults: '**/target/surefire-reports/TEST-*.xml' 
             recordIssues enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()] 
@@ -32,4 +48,4 @@ checkstyle:checkstyle pmd:pmd pmd:cpd findbugs:findbugs'
             recordIssues enabledForFailure: true, tool: pmdParser(pattern: '**/target/pmd.xml') 
         } 
     } 
-}
+ 
